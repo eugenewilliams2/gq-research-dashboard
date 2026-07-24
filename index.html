@@ -1,0 +1,241 @@
+<title>GQ Research — pocket dashboard</title>
+<style>
+  :root {
+    --bg:#0b0e13; --surface:#151b24; --surface-2:#1b232e; --line:#242e3a;
+    --text:#e6edf3; --muted:#8593a6; --faint:#5a6675;
+    --accent:#4cc2e0; --pos:#3fb950; --neg:#f0616d; --warn:#d9a441;
+    --pos-dim:rgba(63,185,80,.14); --neg-dim:rgba(240,97,109,.14); --warn-dim:rgba(217,164,65,.14);
+    --radius:16px; --gap:14px;
+    --mono:ui-monospace,"SF Mono",Menlo,monospace;
+    --ui:system-ui,-apple-system,"Segoe UI",sans-serif;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg:#eef1f5; --surface:#ffffff; --surface-2:#f4f6f9; --line:#dbe1ea;
+      --text:#141a22; --muted:#5c6675; --faint:#8794a3;
+      --accent:#0d8ab0; --pos:#1a7f37; --neg:#cf2231; --warn:#9a6b12;
+      --pos-dim:rgba(26,127,55,.10); --neg-dim:rgba(207,34,49,.10); --warn-dim:rgba(154,107,18,.12);
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg:#0b0e13; --surface:#151b24; --surface-2:#1b232e; --line:#242e3a;
+    --text:#e6edf3; --muted:#8593a6; --faint:#5a6675;
+    --accent:#4cc2e0; --pos:#3fb950; --neg:#f0616d; --warn:#d9a441;
+    --pos-dim:rgba(63,185,80,.14); --neg-dim:rgba(240,97,109,.14); --warn-dim:rgba(217,164,65,.14);
+  }
+  :root[data-theme="light"] {
+    --bg:#eef1f5; --surface:#ffffff; --surface-2:#f4f6f9; --line:#dbe1ea;
+    --text:#141a22; --muted:#5c6675; --faint:#8794a3;
+    --accent:#0d8ab0; --pos:#1a7f37; --neg:#cf2231; --warn:#9a6b12;
+    --pos-dim:rgba(26,127,55,.10); --neg-dim:rgba(207,34,49,.10); --warn-dim:rgba(154,107,18,.12);
+  }
+  * { box-sizing:border-box; }
+  .wrap {
+    font-family:var(--ui); color:var(--text); background:var(--bg);
+    -webkit-font-smoothing:antialiased; margin:0 auto; max-width:680px;
+    padding:22px 16px 40px; line-height:1.5;
+    font-variant-numeric:tabular-nums;
+  }
+  .wrap ::selection { background:var(--accent); color:var(--bg); }
+  .eyebrow { font-size:11px; letter-spacing:.16em; text-transform:uppercase;
+    color:var(--accent); font-weight:600; }
+  h1 { font-size:26px; margin:6px 0 2px; letter-spacing:-.02em; text-wrap:balance; }
+  .stamp { color:var(--muted); font-size:12.5px; font-family:var(--mono); }
+  .head-row { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+  .theme-btn { background:var(--surface); border:1px solid var(--line); color:var(--muted);
+    border-radius:10px; width:38px; height:38px; font-size:16px; cursor:pointer; flex:0 0 auto; }
+  .theme-btn:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
+
+  section { margin-top:26px; }
+  .sec-h { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:12px; }
+  .sec-h h2 { font-size:13px; letter-spacing:.05em; text-transform:uppercase; color:var(--muted);
+    font-weight:600; margin:0; }
+  .sec-h .meta { font-size:12px; color:var(--faint); font-family:var(--mono); }
+
+  .card { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); }
+
+  .verdict { padding:18px 18px 20px; position:relative; overflow:hidden; }
+  .verdict::before { content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--accent); }
+  .verdict .big { font-size:15px; letter-spacing:-.01em; }
+  .verdict .roll { display:flex; align-items:baseline; gap:10px; margin-top:14px; }
+  .verdict .roll .n { font-family:var(--mono); font-size:30px; font-weight:600; }
+  .verdict .roll .n.pos { color:var(--pos); } .verdict .roll .n.neg { color:var(--neg); }
+  .verdict .roll .sub { color:var(--muted); font-size:12.5px; }
+
+  .grid { display:grid; grid-template-columns:repeat(2,1fr); gap:var(--gap); }
+  @media (max-width:420px) { .grid { grid-template-columns:1fr; } }
+
+  .sess { padding:14px; display:flex; flex-direction:column; gap:10px; }
+  .sess-top { display:flex; align-items:center; gap:8px; }
+  .badge { font-size:10.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--accent); background:color-mix(in srgb, var(--accent) 14%, transparent);
+    padding:3px 7px; border-radius:6px; }
+  .strat { font-family:var(--mono); font-size:12px; color:var(--muted); }
+  .pnl { font-family:var(--mono); font-size:24px; font-weight:600; letter-spacing:-.02em; }
+  .sess.pos .pnl { color:var(--pos); } .sess.neg .pnl { color:var(--neg); }
+  .spark-wrap { height:34px; }
+  .spark { width:100%; height:34px; display:block; }
+  .spark-line { stroke-width:1.6; }
+  .spark.up .spark-line { stroke:var(--pos); } .spark.down .spark-line { stroke:var(--neg); }
+  .spark.up .spark-fill { fill:var(--pos-dim); } .spark.down .spark-fill { fill:var(--neg-dim); }
+  .spark.up .spark-dot { fill:var(--pos); } .spark.down .spark-dot { fill:var(--neg); }
+  .rows { display:grid; grid-template-columns:1fr 1fr; gap:4px 12px; margin:0; }
+  .rows > div { display:flex; justify-content:space-between; border-top:1px solid var(--line); padding-top:4px; }
+  .rows dt { color:var(--faint); font-size:12px; }
+  .rows dd { margin:0; font-family:var(--mono); font-size:12.5px; }
+
+  .tiles { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  @media (max-width:520px) { .tiles { grid-template-columns:repeat(2,1fr); } }
+  .tile { background:var(--surface); border:1px solid var(--line); border-radius:12px;
+    padding:12px 12px 10px; }
+  .tile-v { font-family:var(--mono); font-size:21px; font-weight:600; letter-spacing:-.01em; }
+  .tile-l { font-size:11px; color:var(--muted); margin-top:3px; }
+  .tile.pos .tile-v { color:var(--pos); } .tile.neg .tile-v { color:var(--neg); }
+  .tile.warn .tile-v { color:var(--warn); }
+
+  .note { background:var(--surface-2); border:1px solid var(--line); border-radius:12px;
+    padding:12px 14px; font-size:13px; color:var(--muted); margin-top:12px; }
+  .note b { color:var(--text); font-weight:600; }
+  footer { margin-top:30px; color:var(--faint); font-size:12px; text-align:center; line-height:1.7; }
+  footer .mono { font-family:var(--mono); }
+</style>
+
+<main class="wrap">
+  <div class="head-row">
+    <div>
+      <div class="eyebrow">GQ · Research Harness</div>
+      <h1>Pocket dashboard</h1>
+      <div class="stamp">Jul 24, 2026 · 01:06 EDT</div>
+    </div>
+    <button class="theme-btn" onclick="var r=document.documentElement;r.dataset.theme=(r.dataset.theme==='light'?'dark':'light');" aria-label="Toggle light and dark theme">◐</button>
+  </div>
+
+  <section>
+    <article class="card verdict">
+      <div class="big">No strategy here has cleared the honesty bar (Deflated Sharpe ≥ 0.95) after real costs — on FX, crypto, stocks, or memes. That null result is the finding.</div>
+      <div class="roll">
+        <span class="n neg">-1.7%</span>
+        <span class="sub">blended paper P&amp;L across 6 sessions · $58,979 of $60,000</span>
+      </div>
+    </article>
+  </section>
+
+  <section>
+    <div class="sec-h"><h2>Paper trading</h2><span class="meta">simulated · $10k each</span></div>
+    <div class="grid">
+      
+      <article class="card sess pos">
+        <div class="sess-top">
+          <span class="badge">FX</span>
+          <span class="strat">fvg</span>
+        </div>
+        <div class="pnl">+0.7%</div>
+        <div class="spark-wrap"><svg class="spark up" viewBox="0 0 120 34" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,34 0.0,32.0 60.0,32.0 120.0,2.0 120,34" class="spark-fill"/><polyline points="0.0,32.0 60.0,32.0 120.0,2.0" class="spark-line" fill="none"/><circle cx="120.0" cy="2.0" r="2.2" class="spark-dot"/></svg></div>
+        <dl class="rows">
+          <div><dt>Equity</dt><dd>$10,073</dd></div>
+          <div><dt>Cash</dt><dd>$9,699</dd></div>
+          <div><dt>Open</dt><dd>7</dd></div>
+          <div><dt>Closed</dt><dd>3</dd></div>
+        </dl>
+      </article>
+
+      <article class="card sess pos">
+        <div class="sess-top">
+          <span class="badge">FX</span>
+          <span class="strat">ml</span>
+        </div>
+        <div class="pnl">+1.5%</div>
+        <div class="spark-wrap"><svg class="spark up" viewBox="0 0 120 34" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,34 0.0,32.0 60.0,32.0 120.0,2.0 120,34" class="spark-fill"/><polyline points="0.0,32.0 60.0,32.0 120.0,2.0" class="spark-line" fill="none"/><circle cx="120.0" cy="2.0" r="2.2" class="spark-dot"/></svg></div>
+        <dl class="rows">
+          <div><dt>Equity</dt><dd>$10,151</dd></div>
+          <div><dt>Cash</dt><dd>$9,520</dd></div>
+          <div><dt>Open</dt><dd>7</dd></div>
+          <div><dt>Closed</dt><dd>7</dd></div>
+        </dl>
+      </article>
+
+      <article class="card sess neg">
+        <div class="sess-top">
+          <span class="badge">Crypto</span>
+          <span class="strat">ml</span>
+        </div>
+        <div class="pnl">-11.3%</div>
+        <div class="spark-wrap"><svg class="spark down" viewBox="0 0 120 34" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,34 0.0,2.2 30.0,2.0 60.0,32.0 90.0,32.0 120.0,32.0 120,34" class="spark-fill"/><polyline points="0.0,2.2 30.0,2.0 60.0,32.0 90.0,32.0 120.0,32.0" class="spark-line" fill="none"/><circle cx="120.0" cy="32.0" r="2.2" class="spark-dot"/></svg></div>
+        <dl class="rows">
+          <div><dt>Equity</dt><dd>$8,872</dd></div>
+          <div><dt>Cash</dt><dd>$8,872</dd></div>
+          <div><dt>Open</dt><dd>0</dd></div>
+          <div><dt>Closed</dt><dd>123</dd></div>
+        </dl>
+      </article>
+
+      <article class="card sess neg">
+        <div class="sess-top">
+          <span class="badge">Crypto</span>
+          <span class="strat">momentum</span>
+        </div>
+        <div class="pnl">-1.2%</div>
+        <div class="spark-wrap"><svg class="spark down" viewBox="0 0 120 34" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,34 0.0,2.0 30.0,2.0 60.0,31.8 90.0,32.0 120.0,31.3 120,34" class="spark-fill"/><polyline points="0.0,2.0 30.0,2.0 60.0,31.8 90.0,32.0 120.0,31.3" class="spark-line" fill="none"/><circle cx="120.0" cy="31.3" r="2.2" class="spark-dot"/></svg></div>
+        <dl class="rows">
+          <div><dt>Equity</dt><dd>$9,883</dd></div>
+          <div><dt>Cash</dt><dd>$9,797</dd></div>
+          <div><dt>Open</dt><dd>1</dd></div>
+          <div><dt>Closed</dt><dd>2</dd></div>
+        </dl>
+      </article>
+
+      <article class="card sess pos">
+        <div class="sess-top">
+          <span class="badge">Stocks</span>
+          <span class="strat">fvg</span>
+        </div>
+        <div class="pnl">+0.0%</div>
+        <div class="spark-wrap"><svg class="spark up" viewBox="0 0 120 34" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,34 0.0,32.0 120.0,32.0 120,34" class="spark-fill"/><polyline points="0.0,32.0 120.0,32.0" class="spark-line" fill="none"/><circle cx="120.0" cy="32.0" r="2.2" class="spark-dot"/></svg></div>
+        <dl class="rows">
+          <div><dt>Equity</dt><dd>$10,000</dd></div>
+          <div><dt>Cash</dt><dd>$10,000</dd></div>
+          <div><dt>Open</dt><dd>0</dd></div>
+          <div><dt>Closed</dt><dd>0</dd></div>
+        </dl>
+      </article>
+
+      <article class="card sess pos">
+        <div class="sess-top">
+          <span class="badge">Stocks</span>
+          <span class="strat">ml</span>
+        </div>
+        <div class="pnl">+0.0%</div>
+        <div class="spark-wrap"><svg class="spark up" viewBox="0 0 120 34" preserveAspectRatio="none" aria-hidden="true"><polygon points="0,34 0.0,32.0 120.0,32.0 120,34" class="spark-fill"/><polyline points="0.0,32.0 120.0,32.0" class="spark-line" fill="none"/><circle cx="120.0" cy="32.0" r="2.2" class="spark-dot"/></svg></div>
+        <dl class="rows">
+          <div><dt>Equity</dt><dd>$10,000</dd></div>
+          <div><dt>Cash</dt><dd>$10,000</dd></div>
+          <div><dt>Open</dt><dd>0</dd></div>
+          <div><dt>Closed</dt><dd>0</dd></div>
+        </dl>
+      </article>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-h"><h2>Meme launch base rates</h2><span class="meta">on-chain · measured</span></div>
+    <div class="tiles">
+      <div class="tile "><div class="tile-v">100</div><div class="tile-l">launches tracked</div></div><div class="tile warn"><div class="tile-v">7%</div><div class="tile-l">dead / rugged</div></div><div class="tile "><div class="tile-v">1%</div><div class="tile-l">ever 2×</div></div><div class="tile pos"><div class="tile-v">1.00×</div><div class="tile-l">median outcome</div></div>
+    </div>
+    <div class="note">Fresh Solana launches, tracked live. <b>Most die within hours and the
+      median outcome is a loss</b> — the base rate the graduated-coin charts can't show you.</div>
+  </section>
+
+  <section>
+    <div class="sec-h"><h2>Copy-trade viability</h2><span class="meta">smart-money · measured</span></div>
+    <div class="tiles">
+      <div class="tile "><div class="tile-v">166</div><div class="tile-l">wallets tracked</div></div><div class="tile "><div class="tile-v">5</div><div class="tile-l">seen ≥2 launches</div></div><div class="tile "><div class="tile-v">60%</div><div class="tile-l">stay profitable</div></div><div class="tile neg"><div class="tile-v">50%</div><div class="tile-l">median win-rate</div></div>
+    </div>
+    <div class="note">Do early/insider wallets <b>persist</b> so copying pays? A median win-rate near
+      50% means no edge to copy — the winners are mostly luck &amp; rotation.</div>
+  </section>
+
+  <footer>
+    <div>Measurement only — no live trading, no keys, no wallet.</div>
+    <div class="mono">regenerate: python3 scripts/build_mobile_dashboard.py</div>
+  </footer>
+</main>
